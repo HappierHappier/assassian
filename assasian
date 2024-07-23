@@ -1,0 +1,163 @@
+-- Services
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+
+-- Create GUI elements
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local AutoFarmButton = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local BlurEffect = Instance.new("BlurEffect")
+
+-- Set parent
+ScreenGui.Parent = game.CoreGui
+
+-- Configure Frame
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Size = UDim2.new(0, 220, 0, 120)
+Frame.Position = UDim2.new(0.5, -110, 0.5, -60)
+Frame.Active = true
+Frame.Draggable = true
+
+-- Add rounded corners to Frame
+UICorner.Parent = Frame
+UICorner.CornerRadius = UDim.new(0, 10)
+
+-- Configure AutoFarmButton
+AutoFarmButton.Parent = Frame
+AutoFarmButton.Size = UDim2.new(0, 180, 0, 40)
+AutoFarmButton.Position = UDim2.new(0.5, -90, 0.5, -20)
+AutoFarmButton.Text = "Auto Farm: OFF"
+AutoFarmButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+AutoFarmButton.TextColor3 = Color3.new(1, 1, 1)
+AutoFarmButton.Font = Enum.Font.Gotham
+AutoFarmButton.TextSize = 18
+
+-- Add rounded corners to AutoFarmButton
+local AutoFarmButtonCorner = Instance.new("UICorner")
+AutoFarmButtonCorner.Parent = AutoFarmButton
+AutoFarmButtonCorner.CornerRadius = UDim.new(0, 5)
+
+-- Configure CloseButton
+CloseButton.Parent = Frame
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -35, 0, 5)
+CloseButton.Text = "X"
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.Font = Enum.Font.Gotham
+CloseButton.TextSize = 18
+
+-- Add rounded corners to CloseButton
+local CloseButtonCorner = Instance.new("UICorner")
+CloseButtonCorner.Parent = CloseButton
+CloseButtonCorner.CornerRadius = UDim.new(0, 5)
+
+-- Configure BlurEffect
+BlurEffect.Size = 24
+BlurEffect.Parent = Lighting
+
+-- Variables
+local autoFarmEnabled = false
+local guiOpen = true
+local teleportLocations = {
+    game:GetService("Workspace").GameMain.Tycoons.OrangeTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.PurpleTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.BlueTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.GreenTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.PinkTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.YellowTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach,
+    game:GetService("Workspace").GameMain.Tycoons.CyanTycoon.BaseMap.Flag.flag,
+    game:GetService("Workspace").GameMain.Tycoons.RedTycoon.BaseMap.Flag.Attach
+}
+
+-- Function to teleport player
+local function teleportTo(part)
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and part then
+        player.Character.HumanoidRootPart.CFrame = part.CFrame
+    end
+end
+
+-- Auto farm function
+local function autoFarm()
+    while autoFarmEnabled do
+        for _, part in ipairs(teleportLocations) do
+            if not autoFarmEnabled then return end
+            teleportTo(part)
+            wait(1) -- Adjust wait time as necessary
+        end
+    end
+end
+
+-- Toggle auto farm on button click
+AutoFarmButton.MouseButton1Click:Connect(function()
+    autoFarmEnabled = not autoFarmEnabled
+    AutoFarmButton.Text = autoFarmEnabled and "Auto Farm: ON" or "Auto Farm: OFF"
+
+    -- Smooth color transition
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local goal = {}
+    goal.BackgroundColor3 = autoFarmEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(45, 45, 45)
+    local tween = TweenService:Create(AutoFarmButton, tweenInfo, goal)
+    tween:Play()
+
+    if autoFarmEnabled then
+        autoFarm()
+    end
+end)
+
+-- Close button functionality
+CloseButton.MouseButton1Click:Connect(function()
+    autoFarmEnabled = false
+    ScreenGui:Destroy()
+    BlurEffect:Destroy() -- Remove blur effect when GUI is closed
+    UIS.InputBegan:Disconnect() -- Unbind Z key
+end)
+
+-- Function to toggle GUI visibility with animation
+local function toggleGui()
+    local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local goal = {}
+
+    if guiOpen then
+        goal.Position = UDim2.new(1, 10, 0.5, -60) -- Slide to the right out of view
+        local tween = TweenService:Create(Frame, tweenInfo, goal)
+        tween:Play()
+
+        -- Reduce blur effect
+        local blurTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local blurGoal = { Size = 0 }
+        local blurTween = TweenService:Create(BlurEffect, blurTweenInfo, blurGoal)
+        blurTween:Play()
+    else
+        goal.Position = UDim2.new(0.5, -110, 0.5, -60) -- Slide into view
+        local tween = TweenService:Create(Frame, tweenInfo, goal)
+        tween:Play()
+
+        -- Increase blur effect
+        local blurTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local blurGoal = { Size = 24 }
+        local blurTween = TweenService:Create(BlurEffect, blurTweenInfo, blurGoal)
+        blurTween:Play()
+    end
+
+    guiOpen = not guiOpen
+end
+
+-- Bind Z key to toggle GUI visibility
+local inputConnection
+inputConnection = UIS.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Z then
+        toggleGui()
+    end
+end)
